@@ -10,6 +10,19 @@
 html,body{margin:0;height:100%;padding:0;background:#1a1500;color:var(--text);font-family:'Inter',sans-serif;font-weight:600}
 #bgvid{position:fixed;top:0;left:50%;transform:translateX(-50%);width:848px;height:212px;object-fit:cover;z-index:0;opacity:.5;pointer-events:none;border-radius:0 0 16px 16px;box-shadow:0 0 30px rgba(255,215,0,.3)}
 .app{position:relative;z-index:1;display:flex;height:100vh;gap:18px;padding:22px;align-items:flex-start;justify-content:center}
+/* BANNER CAROUSEL */
+.banner-carousel{position:fixed;bottom:20px;left:20px;width:300px;height:150px;z-index:100;border-radius:12px;overflow:hidden;border:2px solid rgba(255,215,0,.4);box-shadow:0 0 20px rgba(255,215,0,.3);background:#1a1500}
+.banner-slides{position:relative;width:100%;height:100%}
+.banner-slide{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s ease}
+.banner-slide.active{opacity:1}
+.banner-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,215,0,.7);border:none;color:#1a1500;font-size:16px;width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.3s;z-index:5}
+.banner-arrow:hover{background:rgba(255,215,0,1);transform:translateY(-50%) scale(1.1)}
+.banner-prev{left:8px}
+.banner-next{right:8px}
+.banner-dots{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5}
+.banner-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.4);cursor:pointer;transition:.3s;border:1px solid rgba(255,215,0,.5)}
+.banner-dot.active{background:rgba(255,215,0,1);transform:scale(1.2)}
+
 .side{width:340px;min-height:170px;display:flex;flex-direction:column;gap:12px;background:rgba(42,32,0,.3);backdrop-filter:blur(4px);border:1px solid rgba(255,215,0,.2);border-radius:16px;padding:16px;box-shadow:0 10px 34px rgba(0,0,0,.35);overflow:visible}
 .side label{color:var(--accent);font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
 .side label::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
@@ -205,6 +218,24 @@ iframe{width:100%;height:100%;display:block;border:0;background:#1a1500;opacity:
 </style>
 </head>
 <body>
+<!-- BANNER CAROUSEL -->
+<div class="banner-carousel">
+  <div class="banner-slides">
+    <img class="banner-slide active" src="ban1.png" alt="Banner 1">
+    <img class="banner-slide" src="ban2.png" alt="Banner 2">
+    <img class="banner-slide" src="ban3.png" alt="Banner 3">
+    <img class="banner-slide" src="ban4.png" alt="Banner 4">
+  </div>
+  <button class="banner-arrow banner-prev" onclick="prevBanner()">&#10094;</button>
+  <button class="banner-arrow banner-next" onclick="nextBanner()">&#10095;</button>
+  <div class="banner-dots">
+    <span class="banner-dot active" onclick="goToBanner(0)"></span>
+    <span class="banner-dot" onclick="goToBanner(1)"></span>
+    <span class="banner-dot" onclick="goToBanner(2)"></span>
+    <span class="banner-dot" onclick="goToBanner(3)"></span>
+  </div>
+</div>
+
 <div class="powered-by">Powered by: <span>@vadymtm90</span></div>
 <div class="password-modal" id="passwordModal">
   <div class="password-box">
@@ -396,6 +427,52 @@ iframe{width:100%;height:100%;display:block;border:0;background:#1a1500;opacity:
 </div>
 
 <script>
+// BANNER CAROUSEL
+var bannerCurrent=0;
+var bannerTotal=4;
+var bannerInterval;
+
+function showBanner(idx){
+  var slides=document.querySelectorAll('.banner-slide');
+  var dots=document.querySelectorAll('.banner-dot');
+  slides.forEach(function(s){s.classList.remove('active');});
+  dots.forEach(function(d){d.classList.remove('active');});
+  if(slides[idx])slides[idx].classList.add('active');
+  if(dots[idx])dots[idx].classList.add('active');
+  bannerCurrent=idx;
+}
+
+function nextBanner(){
+  var next=(bannerCurrent+1)%bannerTotal;
+  showBanner(next);
+  resetBannerTimer();
+}
+
+function prevBanner(){
+  var prev=(bannerCurrent-1+bannerTotal)%bannerTotal;
+  showBanner(prev);
+  resetBannerTimer();
+}
+
+function goToBanner(idx){
+  showBanner(idx);
+  resetBannerTimer();
+}
+
+function resetBannerTimer(){
+  clearInterval(bannerInterval);
+  bannerInterval=setInterval(function(){
+    var next=(bannerCurrent+1)%bannerTotal;
+    showBanner(next);
+  },5000);
+}
+
+// Start auto-switch
+bannerInterval=setInterval(function(){
+  var next=(bannerCurrent+1)%bannerTotal;
+  showBanner(next);
+},5000);
+
 var CH='xal9va_ot_pozitiva';
 var code=localStorage.getItem('xal9va_code')||'+';
 var parts=new Set(JSON.parse(localStorage.getItem('xal9va_parts')||'[]'));
