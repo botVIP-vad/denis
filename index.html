@@ -133,9 +133,18 @@ iframe{width:100%;height:100%;display:block;border:0;background:#1a1500;opacity:
 /* SQUARE BANNERS */
 .right-col{width:280px;display:flex;flex-direction:column;gap:12px}
 .right-col .leaderboard{width:100%}
-.square-banners{display:flex;flex-direction:column;gap:22px;align-items:center;margin-top:28px;padding-top:8px}
-.sq-banner{width:100px;height:100px;border-radius:12px;object-fit:cover;border:2px solid rgba(255,215,0,.4);transition:.25s;box-shadow:0 0 20px rgba(255,215,0,.3);background:#1a1500}
-.sq-banner:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 0 25px rgba(255,215,0,.5)}
+.square-banners{display:flex;flex-direction:column;gap:24px;align-items:center;margin-top:28px;padding-top:8px}
+.sq-carousel{position:relative;width:180px;height:180px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,215,0,.4);box-shadow:0 0 20px rgba(255,215,0,.3);background:#1a1500;flex-shrink:0}
+.sq-slides{position:relative;width:100%;height:100%}
+.sq-slide{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s ease}
+.sq-slide.active{opacity:1}
+.sq-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,215,0,.7);border:none;color:#1a1500;font-size:14px;width:26px;height:26px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.3s;z-index:5}
+.sq-arrow:hover{background:rgba(255,215,0,1);transform:translateY(-50%) scale(1.1)}
+.sq-prev{left:6px}
+.sq-next{right:6px}
+.sq-dots{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:5}
+.sq-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.4);cursor:pointer;transition:.3s;border:1px solid rgba(255,215,0,.5)}
+.sq-dot.active{background:rgba(255,215,0,1);transform:scale(1.2)}
 
 @media(max-width:900px){.app{flex-direction:column;height:auto}.side{width:90vw;max-width:540px}}
 
@@ -310,9 +319,48 @@ iframe{width:100%;height:100%;display:block;border:0;background:#1a1500;opacity:
     <div class="leaderboard-list" id="leaderboardList"></div>
   </div>
     <div class="square-banners">
-      <img class="sq-banner" src="tg1.jpg" alt="Telegram">
-      <img class="sq-banner" src="ds1.jpg" alt="Discord">
-      <img class="sq-banner" src="vk1.jpg" alt="VK">
+      <div class="sq-carousel">
+        <div class="sq-slides" id="sqSlidesTg">
+          <img class="sq-slide active" src="tg1.jpg" alt="Telegram 1">
+          <img class="sq-slide" src="tg2.jpg" alt="Telegram 2">
+          <img class="sq-slide" src="tg3.jpg" alt="Telegram 3">
+        </div>
+        <button class="sq-arrow sq-prev" onclick="sqPrev('tg')">&#10094;</button>
+        <button class="sq-arrow sq-next" onclick="sqNext('tg')">&#10095;</button>
+        <div class="sq-dots" id="sqDotsTg">
+          <span class="sq-dot active" onclick="sqGo('tg',0)"></span>
+          <span class="sq-dot" onclick="sqGo('tg',1)"></span>
+          <span class="sq-dot" onclick="sqGo('tg',2)"></span>
+        </div>
+      </div>
+      <div class="sq-carousel">
+        <div class="sq-slides" id="sqSlidesDs">
+          <img class="sq-slide active" src="ds1.jpg" alt="Discord 1">
+          <img class="sq-slide" src="ds2.jpg" alt="Discord 2">
+          <img class="sq-slide" src="ds3.jpg" alt="Discord 3">
+        </div>
+        <button class="sq-arrow sq-prev" onclick="sqPrev('ds')">&#10094;</button>
+        <button class="sq-arrow sq-next" onclick="sqNext('ds')">&#10095;</button>
+        <div class="sq-dots" id="sqDotsDs">
+          <span class="sq-dot active" onclick="sqGo('ds',0)"></span>
+          <span class="sq-dot" onclick="sqGo('ds',1)"></span>
+          <span class="sq-dot" onclick="sqGo('ds',2)"></span>
+        </div>
+      </div>
+      <div class="sq-carousel">
+        <div class="sq-slides" id="sqSlidesVk">
+          <img class="sq-slide active" src="vk1.jpg" alt="VK 1">
+          <img class="sq-slide" src="vk2.jpg" alt="VK 2">
+          <img class="sq-slide" src="vk3.jpg" alt="VK 3">
+        </div>
+        <button class="sq-arrow sq-prev" onclick="sqPrev('vk')">&#10094;</button>
+        <button class="sq-arrow sq-next" onclick="sqNext('vk')">&#10095;</button>
+        <div class="sq-dots" id="sqDotsVk">
+          <span class="sq-dot active" onclick="sqGo('vk',0)"></span>
+          <span class="sq-dot" onclick="sqGo('vk',1)"></span>
+          <span class="sq-dot" onclick="sqGo('vk',2)"></span>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -486,6 +534,40 @@ bannerInterval=setInterval(function(){
   var next=(bannerCurrent+1)%bannerTotal;
   showBanner(next);
 },5000);
+
+// SQUARE CAROUSELS (TG / DS / VK)
+var sqState={
+  tg:{cur:0,total:3,timer:null},
+  ds:{cur:0,total:3,timer:null},
+  vk:{cur:0,total:3,timer:null}
+};
+
+function sqShow(group,idx){
+  var st=sqState[group];
+  if(!st)return;
+  var slides=document.querySelectorAll('#sqSlides'+group.charAt(0).toUpperCase()+group.slice(1)+' .sq-slide');
+  var dots=document.querySelectorAll('#sqDots'+group.charAt(0).toUpperCase()+group.slice(1)+' .sq-dot');
+  slides.forEach(function(s){s.classList.remove('active');});
+  dots.forEach(function(d){d.classList.remove('active');});
+  if(slides[idx])slides[idx].classList.add('active');
+  if(dots[idx])dots[idx].classList.add('active');
+  st.cur=idx;
+}
+
+function sqResetTimer(group){
+  var st=sqState[group];
+  if(!st)return;
+  clearInterval(st.timer);
+  st.timer=setInterval(function(){
+    sqShow(group,(st.cur+1)%st.total);
+  },5000);
+}
+
+function sqNext(group){var st=sqState[group];sqShow(group,(st.cur+1)%st.total);sqResetTimer(group);}
+function sqPrev(group){var st=sqState[group];sqShow(group,(st.cur-1+st.total)%st.total);sqResetTimer(group);}
+function sqGo(group,idx){sqShow(group,idx);sqResetTimer(group);}
+
+['tg','ds','vk'].forEach(function(g){sqResetTimer(g);});
 
 var CH='xal9va_ot_pozitiva';
 var code=localStorage.getItem('xal9va_code')||'+';
