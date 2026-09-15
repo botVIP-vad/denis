@@ -8,7 +8,8 @@
 :root{--bg:#1a1500;--panel:#2a2000;--accent:#ffd700;--accent-soft:rgba(255,215,0,.06);--text:#f5ecd0;--muted:#a09060}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;padding:0;background:#1a1500;color:var(--text);font-family:'Inter',sans-serif;font-weight:600}
-#bgvid{position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;z-index:-1;opacity:1;pointer-events:none;background:#000}
+#bgvid{position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;z-index:0;opacity:1;pointer-events:none;background:#000}
+#bg-error{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(239,68,68,.92);color:#fff;font-size:12px;font-weight:700;padding:10px 16px;border-radius:10px;display:none;max-width:90vw;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.5)}
 #topvid{position:fixed;top:0;left:50%;transform:translateX(-50%);width:848px;height:212px;object-fit:cover;z-index:1;opacity:.9;pointer-events:none;border-radius:0 0 16px 16px;box-shadow:0 0 30px rgba(255,215,0,.3)}
 .app{position:relative;z-index:1;display:flex;height:100vh;gap:18px;padding:22px;align-items:flex-start;justify-content:center}
 /* BANNER CAROUSEL */
@@ -263,10 +264,11 @@ iframe{width:100%;height:100%;display:block;border:0;background:#1a1500;opacity:
     <div class="password-hint"></div>
   </div>
 </div>
-<video id="bgvid" autoplay muted loop playsinline>
+<video id="bgvid" autoplay muted loop playsinline preload="auto" src="fondenis.mp4">
   <source src="fondenis.mp4" type="video/mp4">
 </video>
-<video id="topvid" autoplay muted loop playsinline>
+<div id="bg-error"></div>
+<video id="topvid" autoplay muted loop playsinline preload="auto" src="banner.mp4">
   <source src="banner.mp4" type="video/mp4">
 </video>
 
@@ -275,7 +277,9 @@ iframe{width:100%;height:100%;display:block;border:0;background:#1a1500;opacity:
     <button class="vid-opt active" onclick="switchVid(0)">Видео 1</button>
     <button class="vid-opt" onclick="switchVid(1)">Видео 2</button>
     <button class="vid-opt" onclick="switchVid(2)">Видео 3</button>
+    <button class="vid-opt" onclick="document.getElementById('bgFileInput').click()">📁 Свой файл…</button>
   </div>
+  <input type="file" id="bgFileInput" accept="video/mp4,video/webm,video/*,.mp4,.webm" style="display:none">
   <button class="vid-toggle" id="vidToggle" onclick="toggleVidMenu()">
     <span class="icon">▲</span> Фон
   </button>
@@ -700,7 +704,10 @@ function renderChatMessage(user,msg,time,id){
   renderChatOverlay();
 }
 function toggleVidMenu(){vidMenuOpen=!vidMenuOpen;document.getElementById('vidOptions').classList.toggle('show',vidMenuOpen);document.getElementById('vidToggle').classList.toggle('open',vidMenuOpen);}
-function switchVid(idx){vidx=idx;var v=document.getElementById('bgvid');v.src=vids[vidx];v.load();v.play().catch(function(){});var opts=document.querySelectorAll('.vid-opt');opts.forEach(function(b,i){b.classList.toggle('active',i===vidx);});vidMenuOpen=false;document.getElementById('vidOptions').classList.remove('show');document.getElementById('vidToggle').classList.remove('open');}
+function showBgError(msg){var e=document.getElementById('bg-error');if(!e)return;e.textContent=msg;e.style.display='block';clearTimeout(window._bgErrT);window._bgErrT=setTimeout(function(){e.style.display='none';},6000);}
+function hideBgError(){var e=document.getElementById('bg-error');if(e)e.style.display='none';}
+function setBgVideo(src,label){var v=document.getElementById('bgvid');if(!v)return;hideBgError();try{v.pause();}catch(e){}v.removeAttribute('src');var s=v.querySelector('source');if(s)s.removeAttribute('src');v.src=src;if(s)s.src=src;v.load();try{var pr=v.play();if(pr&&pr.catch)pr.catch(function(){});}catch(e){}if(label)showBgError(label);}
+function switchVid(idx){vidx=idx;setBgVideo(vids[vidx]);var opts=document.querySelectorAll('.vid-opt');opts.forEach(function(b,i){b.classList.toggle('active',i===vidx);});vidMenuOpen=false;document.getElementById('vidOptions').classList.remove('show');document.getElementById('vidToggle').classList.remove('open');}
 function displayTimer(){var m=Math.floor(timerSeconds/60);var s=timerSeconds%60;document.getElementById('timeDisplay').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');var origTotal=window._origTotal||60;var elapsed=origTotal-timerSeconds;var progress=origTotal>0?elapsed/origTotal:0;document.getElementById('circleProgress').style.strokeDashoffset=MAX_DASH*(1-progress);}
 function adjustTime(sec){timerSeconds=Math.max(0,timerSeconds+sec);window._origTotal=timerSeconds>0?timerSeconds:60;displayTimer();}
 function startTimer(){if(timerRunning)return;timerRunning=true;document.getElementById('btnStart').classList.add('active');document.getElementById('btnPause').classList.remove('active');window._origTotal=timerSeconds>0?timerSeconds:60;timerInterval=setInterval(function(){if(timerSeconds>0){timerSeconds--;displayTimer();}else{pauseTimer();document.getElementById('timeLabel').textContent='Финиш';document.getElementById('timeLabel').classList.add('finish');}},1000);}
@@ -819,7 +826,9 @@ function startQuickRoll(){if(parts.size===0){alert('Нет участников!
 
 // WINNER SCREEN VARIABLES (from eneeergyshow mechanics)
 var winTimerActive=false;
-var winnerHistory=JSON.parse(localStorage.getItem('xal9va_winner_history')||'{}');
+var winnerHistory=null;
+try{winnerHistory=JSON.parse(localStorage.getItem('xal9va_winner_history')||'{}');}catch(e){winnerHistory={};}
+if(!winnerHistory||typeof winnerHistory!=='object'||Array.isArray(winnerHistory))winnerHistory={};
 var userMessages={};
 var rerollCount=0;
 
@@ -1051,6 +1060,49 @@ function connect(){
 
 var f=document.getElementById('twitch-chat-frame');
 f.src='https://www.twitch.tv/embed/'+CH+'/chat?parent='+encodeURIComponent(location.hostname||'localhost')+'&darkpopout&darkmode';
+
+// --- DIAGNOSTICS + LOCAL FILE PICKER FOR BACKGROUND VIDEO ---
+(function(){
+  var v=document.getElementById('bgvid');
+  var topv=document.getElementById('topvid');
+  if(v){
+    v.addEventListener('error',function(){
+      var src=v.currentSrc||v.getAttribute('src')||'(нет src)';
+      showBgError('Не найден фон: '+src+' — положи файл РЯДОМ с denis.html с ТОЧНЫМ именем (регистр важен!) либо выбери через Фон → Свой файл…');
+    },true);
+    var srcEl=v.querySelector('source');
+    if(srcEl)srcEl.addEventListener('error',function(){
+      showBgError('Файл фона "'+srcEl.getAttribute('src')+'" не найден. Проверь: 1) файл лежит в той же папке что denis.html 2) имя буква-в-букву 3) если открываешь через file:// — лучше запустить через Live Server / OBS local file.');
+    });
+    v.addEventListener('loadeddata',hideBgError);
+    // retry play after user gesture (Chrome autoplay policy)
+    document.addEventListener('click',function(){try{if(v.paused){var p=v.play();if(p&&p.catch)p.catch(function(){});}}catch(e){}}, {once:true});
+  }
+  if(topv){
+    topv.addEventListener('error',function(){/* верхний баннер не критичен — тихо прячем */topv.style.display='none';},true);
+    var ts=topv.querySelector('source');
+    if(ts)ts.addEventListener('error',function(){topv.style.display='none';});
+  }
+  var fileInput=document.getElementById('bgFileInput');
+  if(fileInput){
+    fileInput.addEventListener('change',function(){
+      if(!fileInput.files||!fileInput.files[0])return;
+      var file=fileInput.files[0];
+      var url=URL.createObjectURL(file);
+      setBgVideo(url,'Загружен локальный файл: '+file.name+' (работает до перезагрузки страницы — для постоянки положи файл рядом с denis.html и назови fondenis.mp4)');
+      vidMenuOpen=false;document.getElementById('vidOptions').classList.remove('show');document.getElementById('vidToggle').classList.remove('open');
+    });
+  }
+  // Early check: if fondenis.mp4 gives 404 — fetch test to give clear message (only http/https)
+  if(location.protocol.indexOf('http')===0){
+    fetch('fondenis.mp4',{method:'HEAD'}).then(function(r){
+      if(!r.ok){
+        var cur=(v&&(v.currentSrc||''))||'';
+        if(cur.indexOf('blob:')!==0)showBgError('fondenis.mp4 не найден в папке сайта (ошибка '+r.status+'). Положи видео рядом с denis.html или выбери через Фон → Свой файл…');
+      }
+    }).catch(function(){});
+  }
+})();
 
 displayTimer();
 connect();
